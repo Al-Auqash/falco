@@ -3,24 +3,24 @@
 <head><meta charset="utf-8"><title>Download File Info</title><link rel="stylesheet" href="style.css"></head>
 <body>
   <div class="dlg-body">
-    <div id="urlLine" style="color:#0066cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:text;cursor:text;margin-bottom:10px"></div>
+    <div id="urlLine" style="color:var(--link);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:text;cursor:text;margin-bottom:12px"></div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <label style="width:60px">Category</label>
+      <label style="width:74px">Category</label>
       <select id="category" style="width:180px">
         <option>General</option><option>Compressed</option><option>Documents</option>
         <option>Music</option><option>Programs</option><option>Video</option>
       </select>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <label style="width:60px">Save As</label>
+      <label style="width:74px">Save As</label>
       <input type="text" id="saveAs" style="flex:1" spellcheck="false">
       <button class="btn" id="browse" style="min-width:30px;width:30px;padding:4px 0">…</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <label style="width:60px">Description</label>
+      <label style="width:74px">Description</label>
       <input type="text" id="descr" style="flex:1" spellcheck="false">
     </div>
-    <div style="margin:2px 0 0 68px;color:#333">File size: <span id="fsize">Unknown</span></div>
+    <div style="margin:2px 0 0 82px;color:var(--muted)">File size: <span id="fsize">Unknown</span></div>
     <div class="btn-row">
       <button class="btn" id="later" style="min-width:110px">Download later</button>
       <button class="btn default" id="start" style="min-width:120px">Start Download</button>

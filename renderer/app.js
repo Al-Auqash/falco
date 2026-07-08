@@ -1,5 +1,5 @@
 'use strict';
-/* Main window: menubar, toolbar, category tree, download grid. */
+/* Main window: toolbar, category tree, download grid. */
 
 const $ = (s) => document.querySelector(s);
 const downloads = new Map();
@@ -44,138 +44,78 @@ function statusText(d) {
   return d.status;
 }
 
-/* ---------- menu bar ---------- */
-const MENUS = {
-  Tasks: [
-    ['Add new download...', () => promptAddUrl()],
-    ['Add batch download...', null],
-    '-',
-    ['Import', null], ['Export', null],
-    '-',
-    ['Drop target', null],
-    '-',
-    ['Exit', () => idm.appQuit()],
-  ],
-  File: [
-    ['Open', () => act('open')],
-    ['Open with...', null],
-    ['Open folder', () => act('folder')],
-    '-',
-    ['Move to...', null],
-    ['Rename', null],
-    '-',
-    ['Delete', () => act('delete'), 'Del'],
-    ['Properties', null],
-  ],
-  Downloads: [
-    ['Resume download', () => act('resume')],
-    ['Stop download', () => act('stop')],
-    ['Stop all downloads', () => idm.stopAll()],
-    '-',
-    ['Delete all completed', () => idm.removeCompleted()],
-    '-',
-    ['Start queue', () => idm.startQueue()],
-    ['Stop queue', () => idm.stopQueue()],
-    '-',
-    ['Scheduler...', () => idm.openDialog('scheduler')],
-    ['Speed Limiter', null],
-    ['Options...', () => idm.openDialog('options')],
-  ],
-  View: [
-    ['Toolbar', null],
-    ['Categories', () => togglePanel()],
-    '-',
-    ['Large icons', null],
-    ['Small icons', null],
-  ],
-  Help: [
-    ['Falco Help', null],
-    ['Browser integration...', () => idm.openDialog('integration')],
-    ['Check for updates...', null],
-    '-',
-    ['About Falco...', () => idm.openDialog('about')],
-  ],
-  Registration: [
-    ['Registration...', null],
-  ],
-};
-
-const menubar = $('#menubar');
-let openMenu = null;
-for (const name of Object.keys(MENUS)) {
-  const el = document.createElement('span');
-  el.className = 'menu-title';
-  el.textContent = name;
-  el.onmousedown = (e) => { e.stopPropagation(); openMenu === el ? closeMenus() : showMenu(el, name); };
-  el.onmouseenter = () => { if (openMenu && openMenu !== el) showMenu(el, name); };
-  menubar.appendChild(el);
-}
+/* ---------- popup menus (overflow + context) ---------- */
 const popup = document.createElement('div');
 popup.className = 'menu-popup';
 document.body.appendChild(popup);
 
-function showMenu(el, name) {
-  closeMenus();
-  openMenu = el;
-  el.classList.add('open');
-  popup.innerHTML = '';
-  for (const item of MENUS[name]) {
-    if (item === '-') { const s = document.createElement('div'); s.className = 'sep'; popup.appendChild(s); continue; }
-    const [label, fn, accel] = item;
+function fillMenu(el, items) {
+  el.innerHTML = '';
+  for (const it of items) {
+    if (it === '-') { const s = document.createElement('div'); s.className = 'sep'; el.appendChild(s); continue; }
+    const [label, fn, enabled = true] = it;
     const mi = document.createElement('div');
-    mi.className = 'mi' + (fn ? '' : ' disabled');
+    mi.className = 'mi' + (enabled && fn ? '' : ' disabled');
     mi.textContent = label;
-    if (accel) { const a = document.createElement('span'); a.className = 'accel'; a.textContent = accel; mi.appendChild(a); }
-    if (fn) mi.onmousedown = (e) => { e.stopPropagation(); closeMenus(); fn(); };
-    popup.appendChild(mi);
+    if (enabled && fn) mi.onmousedown = (e) => { e.stopPropagation(); closeMenus(); fn(); };
+    el.appendChild(mi);
   }
-  const r = el.getBoundingClientRect();
-  popup.style.left = r.left + 'px';
-  popup.style.top = r.bottom + 1 + 'px';
+}
+function showPopupAt(x, y, items) {
+  fillMenu(popup, items);
   popup.style.display = 'block';
+  popup.style.left = Math.min(x, window.innerWidth - popup.offsetWidth - 6) + 'px';
+  popup.style.top = Math.min(y, window.innerHeight - popup.offsetHeight - 6) + 'px';
 }
-function closeMenus() {
-  popup.style.display = 'none';
-  if (openMenu) openMenu.classList.remove('open');
-  openMenu = null;
-  hideCtx();
-}
+function closeMenus() { popup.style.display = 'none'; hideCtx(); }
 document.addEventListener('mousedown', closeMenus);
 
 /* ---------- toolbar ---------- */
 const TOOLBAR = [
-  ['addurl', 'Add URL', () => promptAddUrl(), null],
-  ['resume', 'Resume', () => act('resume'), 'needsResumable'],
-  ['stop', 'Stop', () => act('stop'), 'needsActive'],
-  ['stopall', 'Stop All', () => idm.stopAll(), null],
-  ['delete', 'Delete', () => act('delete'), 'needsSel'],
-  ['delcompleted', 'Delete Completed', () => idm.removeCompleted(), null],
-  ['options', 'Options', () => idm.openDialog('options'), null],
-  ['scheduler', 'Scheduler', () => idm.openDialog('scheduler'), null],
-  ['startqueue', 'Start Queue', () => idm.startQueue(), null, true],
-  ['stopqueue', 'Stop Queue', () => idm.stopQueue(), null, true],
-  ['grabber', 'Grabber', () => idm.openDialog('grabber'), null],
-  ['tellafriend', 'Tell a Friend', () => idm.openExternal('mailto:?subject=Internet%20Download%20Manager&body=Check%20out%20Internet%20Download%20Manager'), null],
+  ['addurl', 'Add URL', () => promptAddUrl(), null, 'primary'],
+  '|',
+  ['resume', 'Resume', () => act('resume'), 'needsResumable', 'icon-only'],
+  ['stop', 'Stop', () => act('stop'), 'needsActive', 'icon-only'],
+  ['stopall', 'Stop All', () => idm.stopAll(), null, 'icon-only'],
+  '|',
+  ['delete', 'Delete', () => act('delete'), 'needsSel', 'icon-only'],
+  ['delcompleted', 'Clear Completed', () => idm.removeCompleted(), null, 'icon-only'],
+  '|',
+  ['startqueue', 'Start Queue', () => idm.startQueue(), null],
+  ['stopqueue', 'Stop Queue', () => idm.stopQueue(), null],
+  '>',
+  ['scheduler', 'Scheduler', () => idm.openDialog('scheduler'), null, 'icon-only'],
+  ['grabber', 'Grabber', () => idm.openDialog('grabber'), null, 'icon-only'],
+  ['options', 'Options', () => idm.openDialog('options'), null, 'icon-only'],
+  ['more', 'More', null, null, 'icon-only'],
 ];
 const toolbar = $('#toolbar');
 const tbEls = {};
-for (const [icon, label, fn, cond, drop] of TOOLBAR) {
-  const wrap = document.createElement('span');
-  wrap.className = 'tbtn-wrap';
+for (const item of TOOLBAR) {
+  if (item === '|') { const s = document.createElement('span'); s.className = 'tb-sep'; toolbar.appendChild(s); continue; }
+  if (item === '>') { const s = document.createElement('span'); s.className = 'tb-spacer'; toolbar.appendChild(s); continue; }
+  const [icon, label, fn, cond, cls] = item;
   const b = document.createElement('span');
-  b.className = 'tbtn' + (fn ? '' : ' disabled');
+  b.className = 'tbtn' + (cls ? ' ' + cls : '');
+  b.title = label;
   b.innerHTML = `${TB[icon]}<span class="lbl">${label}</span>`;
   if (fn) b.onclick = () => { if (!b.classList.contains('disabled')) fn(); };
-  wrap.appendChild(b);
-  if (drop) {
-    const da = document.createElement('span');
-    da.className = 'drop-arrow';
-    da.innerHTML = '<svg viewBox="0 0 8 8"><path d="M0 2l4 4 4-4z" fill="#555"/></svg>';
-    wrap.appendChild(da);
-  }
-  toolbar.appendChild(wrap);
+  toolbar.appendChild(b);
   tbEls[icon] = { el: b, cond };
 }
+tbEls.more.el.onmousedown = (e) => {
+  e.stopPropagation();
+  const open = popup.style.display === 'block';
+  closeMenus();
+  if (open) return;
+  const r = tbEls.more.el.getBoundingClientRect();
+  showPopupAt(r.right - 210, r.bottom + 4, [
+    ['Browser integration...', () => idm.openDialog('integration')],
+    ['About Falco', () => idm.openDialog('about')],
+    '-',
+    ['Exit', () => idm.appQuit()],
+  ]);
+};
 function refreshToolbar() {
   const sel = [...selectedIds].map((id) => downloads.get(id)).filter(Boolean);
   const anyActive = [...downloads.values()].some((d) => ['downloading', 'connecting'].includes(d.status));
@@ -192,16 +132,15 @@ function refreshToolbar() {
 
 /* ---------- category tree ---------- */
 const TREE_ROWS = [
-  { key: 'all', label: 'All Downloads', icon: 'folderOpen', exp: '-', depth: 0, filter: { type: 'all' } },
-  { key: 'Compressed', label: 'Compressed', icon: 'compressed', exp: null, depth: 1, filter: { type: 'cat', cat: 'Compressed' } },
-  { key: 'Documents', label: 'Documents', icon: 'documents', exp: null, depth: 1, filter: { type: 'cat', cat: 'Documents' } },
-  { key: 'Music', label: 'Music', icon: 'music', exp: null, depth: 1, filter: { type: 'cat', cat: 'Music' } },
-  { key: 'Programs', label: 'Programs', icon: 'programs', exp: null, depth: 1, filter: { type: 'cat', cat: 'Programs' } },
-  { key: 'Video', label: 'Video', icon: 'video', exp: null, depth: 1, filter: { type: 'cat', cat: 'Video' } },
-  { key: 'unfinished', label: 'Unfinished', icon: 'unfinished', exp: '+', depth: 0, filter: { type: 'unfinished' } },
-  { key: 'finished', label: 'Finished', icon: 'finished', exp: '+', depth: 0, filter: { type: 'finished' } },
-  { key: 'grabber', label: 'Grabber projects', icon: 'grabberprj', exp: null, depth: 0, filter: { type: 'none' } },
-  { key: 'queues', label: 'Queues', icon: 'queues', exp: '+', depth: 0, filter: { type: 'queue' } },
+  { key: 'all', label: 'All Downloads', icon: 'folderOpen', depth: 0, filter: { type: 'all' } },
+  { key: 'Compressed', label: 'Compressed', icon: 'compressed', depth: 1, filter: { type: 'cat', cat: 'Compressed' } },
+  { key: 'Documents', label: 'Documents', icon: 'documents', depth: 1, filter: { type: 'cat', cat: 'Documents' } },
+  { key: 'Music', label: 'Music', icon: 'music', depth: 1, filter: { type: 'cat', cat: 'Music' } },
+  { key: 'Programs', label: 'Programs', icon: 'programs', depth: 1, filter: { type: 'cat', cat: 'Programs' } },
+  { key: 'Video', label: 'Video', icon: 'video', depth: 1, filter: { type: 'cat', cat: 'Video' } },
+  { key: 'unfinished', label: 'Unfinished', icon: 'unfinished', depth: 0, filter: { type: 'unfinished' } },
+  { key: 'finished', label: 'Finished', icon: 'finished', depth: 0, filter: { type: 'finished' } },
+  { key: 'queues', label: 'Queue', icon: 'queues', depth: 0, filter: { type: 'queue' } },
 ];
 const cattree = $('#cattree');
 function renderTree() {
@@ -209,18 +148,10 @@ function renderTree() {
   for (const row of TREE_ROWS) {
     const n = document.createElement('div');
     n.className = `tnode depth${row.depth}` + (currentFilter._key === row.key ? ' sel' : '');
-    n.innerHTML = `<span class="expander${row.exp ? '' : ' blank'}">${row.exp || ''}</span>` +
-      `<span class="ticon">${TREE[row.icon]}</span><span class="tlabel">${row.label}</span>`;
+    n.innerHTML = `<span class="ticon">${TREE[row.icon]}</span><span class="tlabel">${row.label}</span>`;
     n.onclick = () => { currentFilter = { ...row.filter, _key: row.key }; renderTree(); renderGrid(); };
     cattree.appendChild(n);
   }
-}
-$('#catClose').onclick = () => togglePanel();
-function togglePanel() {
-  const p = $('#catpanel'), s = $('#splitter');
-  const hide = p.style.display !== 'none';
-  p.style.display = hide ? 'none' : 'flex';
-  s.style.display = hide ? 'none' : 'block';
 }
 
 /* splitter drag */
@@ -237,13 +168,13 @@ function togglePanel() {
 
 /* ---------- grid ---------- */
 const COLS = [
-  { key: 'filename', label: 'File Name', w: 170 },
-  { key: 'q', label: 'Q', w: 24 },
-  { key: 'size', label: 'Size', w: 68 },
-  { key: 'status', label: 'Status', w: 70 },
-  { key: 'timeLeft', label: 'Time left', w: 66 },
-  { key: 'speed', label: 'Transfer rate', w: 76 },
-  { key: 'lastTryAt', label: 'Last Try Date', w: 76 },
+  { key: 'filename', label: 'File Name', w: 190 },
+  { key: 'q', label: '', w: 24 },
+  { key: 'size', label: 'Size', w: 80 },
+  { key: 'status', label: 'Status', w: 90 },
+  { key: 'timeLeft', label: 'Time left', w: 74 },
+  { key: 'speed', label: 'Transfer rate', w: 84 },
+  { key: 'lastTryAt', label: 'Last Try Date', w: 90 },
   { key: 'description', label: 'Description', w: 150 },
 ];
 const gridHead = $('#gridHead'), gridBody = $('#gridBody');
@@ -258,7 +189,7 @@ function renderHead() {
     gridHead.appendChild(el);
   }
   const fill = document.createElement('div');
-  fill.className = 'gcol'; fill.style.flex = '1'; fill.style.borderRight = 'none';
+  fill.className = 'gcol'; fill.style.flex = '1';
   gridHead.appendChild(fill);
 }
 
@@ -272,6 +203,13 @@ function passesFilter(d) {
   return false;
 }
 
+function statusClass(d) {
+  if (d.status === 'complete') return ' st-complete';
+  if (d.status === 'error') return ' st-error';
+  if (['downloading', 'connecting'].includes(d.status)) return ' st-active';
+  return '';
+}
+
 function renderGrid() {
   let rows = [...downloads.values()].filter(passesFilter);
   if (sortKey) {
@@ -281,15 +219,28 @@ function renderGrid() {
     });
   } else rows.sort((a, b) => b.addedAt - a.addedAt);
   gridBody.innerHTML = '';
+  if (!rows.length) {
+    const e = document.createElement('div');
+    e.className = 'grid-empty';
+    e.innerHTML = downloads.size
+      ? '<b>Nothing here</b><span>No downloads match this filter.</span>'
+      : '<b>No downloads yet</b><span>Press Add URL, or start a download in your browser and Falco will catch it.</span>';
+    gridBody.appendChild(e);
+    return;
+  }
   for (const d of rows) {
     const r = document.createElement('div');
     r.className = 'grow' + (selectedIds.has(d.id) ? ' sel' : '');
     r.dataset.id = d.id;
+    const inProgress = ['downloading', 'paused', 'connecting'].includes(d.status) && d.size;
+    const statusHtml = inProgress
+      ? `<span class="stack"><span>${esc(statusText(d))}</span><span class="minibar"><i style="width:${Math.min(100, d.pct || 0)}%"></i></span></span>`
+      : esc(statusText(d));
     const cells = [
       `<span class="ficon">${fileIcon(d.filename)}</span><span style="overflow:hidden;text-overflow:ellipsis">${esc(d.filename || d.url)}</span>`,
-      d.queue ? '<span style="color:#2b8a7d">◷</span>' : '',
+      d.queue ? '<span class="qdot" title="In queue">◷</span>' : '',
       esc(fmtSize(d.size)),
-      esc(statusText(d)),
+      statusHtml,
       d.status === 'downloading' ? esc(fmtTimeLeft(d.timeLeft)) : '',
       d.status === 'downloading' ? esc(fmtSpeed(d.speed)) : '',
       esc(fmtDate(d.lastTryAt)),
@@ -297,7 +248,7 @@ function renderGrid() {
     ];
     cells.forEach((html, i) => {
       const c = document.createElement('div');
-      c.className = 'gcell';
+      c.className = 'gcell' + (COLS[i].key === 'status' ? statusClass(d) : '');
       c.style.width = COLS[i].w + 'px';
       c.innerHTML = html;
       r.appendChild(c);
@@ -329,7 +280,7 @@ document.body.appendChild(ctx);
 function showCtx(e, d) {
   const active = ['downloading', 'connecting'].includes(d.status);
   const resumable = ['paused', 'queued', 'error'].includes(d.status);
-  const items = [
+  fillMenu(ctx, [
     ['Open', () => idm.openFile(d.id), d.status === 'complete'],
     ['Open in Explorer', () => idm.openFolder(d.id), true],
     ['Copy download address', () => navigator.clipboard.writeText(d.url), true],
@@ -346,17 +297,7 @@ function showCtx(e, d) {
     ['Properties', () => idm.openDialog('properties', { id: d.id }), true],
     '-',
     ['Delete', () => act('delete'), true],
-  ];
-  ctx.innerHTML = '';
-  for (const it of items) {
-    if (it === '-') { const s = document.createElement('div'); s.className = 'sep'; ctx.appendChild(s); continue; }
-    const [label, fn, enabled] = it;
-    const mi = document.createElement('div');
-    mi.className = 'mi' + (enabled && fn ? '' : ' disabled');
-    mi.textContent = label;
-    if (enabled && fn) mi.onmousedown = (ev) => { ev.stopPropagation(); hideCtx(); fn(); };
-    ctx.appendChild(mi);
-  }
+  ]);
   ctx.style.display = 'block';
   ctx.style.left = Math.min(e.clientX, window.innerWidth - 230) + 'px';
   ctx.style.top = Math.min(e.clientY, window.innerHeight - ctx.offsetHeight - 4) + 'px';

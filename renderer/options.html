@@ -17,7 +17,7 @@
       </div>
       <div class="groupbox" style="margin-top:14px">
         <span class="gb-title">Browser integration</span>
-        <div style="margin:4px 0 8px;color:#555">Install the Falco extension so your browser hands downloads to Falco (Chrome, Edge, and other Chromium browsers).</div>
+        <div class="hint" style="margin:4px 0 10px">Install the Falco extension so your browser hands downloads to Falco (Chrome, Edge, and other Chromium browsers).</div>
         <button class="btn" id="integration" style="min-width:150px">Setup instructions...</button>
       </div>
     </div>
@@ -30,7 +30,7 @@
         <input type="text" id="dldir" style="flex:1" spellcheck="false">
         <button class="btn" id="browse" style="min-width:80px">Browse...</button>
       </div>
-      <div style="color:#555;margin-top:10px">Files are sorted into category subfolders (Music, Video, Programs, ...).</div>
+      <div class="hint" style="margin-top:10px">Files are sorted into category subfolders (Music, Video, Programs, ...).</div>
     </div>
 
     <div class="tabpage" id="page-connection" style="display:none">
@@ -40,7 +40,7 @@
           <option>1</option><option>2</option><option>4</option><option selected>8</option><option>16</option><option>32</option>
         </select>
       </div>
-      <div style="color:#555;margin-top:10px">Higher connection counts can speed up downloads but increase server load.</div>
+      <div class="hint" style="margin-top:10px">Higher connection counts can speed up downloads but increase server load.</div>
     </div>
 
     <div class="tabpage" id="page-downloads" style="display:none">
@@ -49,9 +49,8 @@
     </div>
 
     <div class="btn-row">
-      <button class="btn default" id="ok">OK</button>
       <button class="btn" id="cancel">Cancel</button>
-      <button class="btn" id="help" disabled>Help</button>
+      <button class="btn default" id="ok">OK</button>
     </div>
   </div>
   <script src="icons.js"></script>

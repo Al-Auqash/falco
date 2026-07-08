@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -13,6 +13,7 @@ const flag = (name) => {
   return a ? a.split('=').slice(1).join('=') : null;
 };
 if (flag('userdata')) app.setPath('userData', flag('userdata'));
+if (flag('theme')) nativeTheme.themeSource = flag('theme'); // test hook: force light/dark
 
 let mgr;
 let mainWin = null;
@@ -51,7 +52,8 @@ function broadcast(channel, payload) {
 
 function makeWindow(file, opts, query = {}) {
   const win = new BrowserWindow({
-    frame: false, show: false, backgroundColor: '#ffffff',
+    frame: false, show: false,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1d1d1d' : '#ffffff',
     minimizable: true, maximizable: false, resizable: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
     ...opts,
@@ -65,12 +67,12 @@ function makeWindow(file, opts, query = {}) {
 
 function createMainWindow() {
   mainWin = makeWindow('index.html', {
-    width: 900, height: 470, minWidth: 640, minHeight: 320,
-    resizable: true, maximizable: true, backgroundColor: '#f0f0f0',
+    width: 960, height: 500, minWidth: 640, minHeight: 320,
+    resizable: true, maximizable: true,
     show: !argv.includes('--hidden'),
   });
   if (argv.includes('--hidden')) mainWin.removeAllListeners('ready-to-show');
-  // with a tray, closing the main window keeps Falco running in the background (like IDM)
+  // with a tray, closing the main window keeps Falco running in the background
   mainWin.on('close', (e) => {
     if (!quitting && tray) { e.preventDefault(); mainWin.hide(); }
   });
@@ -144,15 +146,15 @@ function openDialog(name, query = {}, opts = {}) {
   const existing = dialogWins.get(key);
   if (existing && !existing.isDestroyed()) { existing.focus(); return existing; }
   const sizes = {
-    addurl: { width: 664, height: 132 },
-    fileinfo: { width: 520, height: 262 },
-    complete: { width: 510, height: 190 },
-    options: { width: 620, height: 460 },
-    scheduler: { width: 654, height: 520 },
-    about: { width: 420, height: 300 },
-    grabber: { width: 640, height: 440 },
-    integration: { width: 560, height: 400 },
-    properties: { width: 480, height: 320 },
+    addurl: { width: 664, height: 152 },
+    fileinfo: { width: 520, height: 300 },
+    complete: { width: 510, height: 216 },
+    options: { width: 620, height: 480 },
+    scheduler: { width: 560, height: 420 },
+    about: { width: 420, height: 330 },
+    grabber: { width: 640, height: 460 },
+    integration: { width: 560, height: 440 },
+    properties: { width: 480, height: 350 },
   };
   const win = makeWindow(`${name}.html`, { parent: mainWin || undefined, ...sizes[name], ...opts }, query);
   dialogWins.set(key, win);
@@ -163,7 +165,7 @@ function openDialog(name, query = {}, opts = {}) {
 function openProgress(id) {
   const existing = progressWins.get(id);
   if (existing && !existing.isDestroyed()) { existing.focus(); return; }
-  const win = makeWindow('progress.html', { width: 522, height: 292, minimizable: true }, { id });
+  const win = makeWindow('progress.html', { width: 522, height: 316, minimizable: true }, { id });
   progressWins.set(id, win);
   win.on('closed', () => progressWins.delete(id));
 }
@@ -332,7 +334,7 @@ app.on('before-quit', () => { try { mgr.pauseAll(); mgr.save(); } catch {} });
 function seedDemoData() {
   const rows = [
     ['https://example.com/media/Undercover.mp3', 'Undercover.mp3', 7509342, 'complete', 'Music'],
-    ['https://mirror2.internetdownloadmanager.com/mult.flv', 'mult.flv', 38808453, 'downloading', 'Video'],
+    ['https://example.com/videos/mult.flv', 'mult.flv', 38808453, 'downloading', 'Video'],
     ['https://example.com/videos/mult.mp4', 'mult.mp4', 38808453, 'paused', 'Video'],
     ['https://example.com/The%20Real%20Her.mp3', 'The Real Her.mp3', 8404992, 'complete', 'Music'],
     ['https://example.com/screenshots.zip', 'screenshots.zip', 1305230, 'complete', 'Compressed'],
@@ -380,7 +382,7 @@ async function runE2E() {
   const js = (win, code) => win.webContents.executeJavaScript(code, true);
   const step = (n) => console.log('E2E step:', n);
 
-  const dlDir = fs.mkdtempSync(path.join(os.tmpdir(), 'idm-e2e-'));
+  const dlDir = fs.mkdtempSync(path.join(os.tmpdir(), 'falco-e2e-'));
   settings.downloadDir = dlDir;
   mgr.defaultDir = dlDir;
   const srv = await makeServer({ size: 32 * 1024 * 1024, throttleMs: 10 });

@@ -10,14 +10,14 @@
     </div>
 
     <div class="tabpage" id="page-status" style="padding:8px 10px;overflow:hidden">
-      <div id="purl" style="color:#0066cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:text;margin-bottom:6px"></div>
-      <table style="border-collapse:collapse;font-size:12px;white-space:nowrap" id="statTable">
-        <tr><td style="width:124px;padding:2px 0">Status</td><td id="pstatus" style="color:#0066cc"></td></tr>
-        <tr><td style="padding:2px 0">File size</td><td id="psize"></td></tr>
-        <tr><td style="padding:2px 0">Downloaded</td><td id="pdown"></td></tr>
-        <tr><td style="padding:2px 0">Transfer rate</td><td id="prate"></td></tr>
-        <tr><td style="padding:2px 0">Time left</td><td id="pleft"></td></tr>
-        <tr><td style="padding:2px 0">Resume capability</td><td id="presume"></td></tr>
+      <div id="purl" style="color:var(--link);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:text;margin-bottom:8px"></div>
+      <table style="border-collapse:collapse;font-size:12.5px;white-space:nowrap" id="statTable">
+        <tr><td style="width:124px;padding:2px 0;color:var(--muted)">Status</td><td id="pstatus" style="color:var(--link)"></td></tr>
+        <tr><td style="padding:2px 0;color:var(--muted)">File size</td><td id="psize"></td></tr>
+        <tr><td style="padding:2px 0;color:var(--muted)">Downloaded</td><td id="pdown"></td></tr>
+        <tr><td style="padding:2px 0;color:var(--muted)">Transfer rate</td><td id="prate"></td></tr>
+        <tr><td style="padding:2px 0;color:var(--muted)">Time left</td><td id="pleft"></td></tr>
+        <tr><td style="padding:2px 0;color:var(--muted)">Resume capability</td><td id="presume"></td></tr>
       </table>
     </div>
 
@@ -44,14 +44,14 @@
       <button class="btn" id="cancel">Cancel</button>
     </div>
 
-    <div id="detailPane" style="display:none;margin-top:10px;flex:1;min-height:0;flex-direction:column">
-      <div style="margin-bottom:3px">Connections</div>
-      <div style="border:1px solid #d9d9d9;background:#fff;flex:1;overflow:auto">
+    <div id="detailPane" style="display:none;margin-top:12px;flex:1;min-height:0;flex-direction:column">
+      <div style="margin-bottom:5px;font-weight:600;font-size:12px">Connections</div>
+      <div class="panel" style="flex:1;overflow:auto">
         <table style="border-collapse:collapse;width:100%;font-size:12px" id="segTable">
           <thead><tr>
-            <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #e5e5e5;font-weight:normal;width:36px">N.</th>
-            <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #e5e5e5;font-weight:normal;width:110px">Downloaded</th>
-            <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #e5e5e5;font-weight:normal">Info</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--muted);width:36px">N.</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--muted);width:110px">Downloaded</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--muted)">Info</th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -82,14 +82,15 @@
       ctx.clearRect(0, 0, w, h);
       if (!d || !d.size) return;
       const px = (b) => (b / d.size) * w;
-      ctx.fillStyle = '#31b331';
+      // read resolved theme colors (light-dark() only resolves on real properties)
+      ctx.fillStyle = getComputedStyle(canvas.parentElement).color;
       if (d.segments && d.segments.length) {
         for (const s of d.segments) ctx.fillRect(px(s.start), 0, px(Math.min(s.written, s.end - s.start + 1)), h);
       } else {
         ctx.fillRect(0, 0, px(d.received), h);
       }
       // segment boundary ticks
-      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
       for (const s of d.segments || []) ctx.fillRect(px(s.start), 0, 1, h);
     }
 
@@ -101,7 +102,7 @@
       $('#purl').textContent = d.url;
       $('#pstatus').textContent = { connecting: 'Connecting...', downloading: 'Receiving data...',
         paused: 'Paused', queued: 'Queued', complete: 'Complete', error: (d.error || 'Error') }[d.status] || d.status;
-      $('#pstatus').style.color = d.status === 'error' ? '#c92a2a' : '#0066cc';
+      $('#pstatus').style.color = d.status === 'error' ? 'var(--danger)' : d.status === 'complete' ? 'var(--success)' : 'var(--link)';
       $('#psize').textContent = d.size != null ? `${fmtSize(d.size)}` : 'Unknown';
       $('#pdown').textContent = d.received ? `${fmtSize(d.received)}  ( ${d.size ? ((d.received / d.size) * 100).toFixed(2) + ' %' : ''} )` : '';
       $('#prate').textContent = d.status === 'downloading' ? fmtSpeed(d.speed) : '';
@@ -118,7 +119,7 @@
         const tr = document.createElement('tr');
         for (const txt of [String(i + 1), fmtSize(done), done >= total ? 'Complete' : (d.status === 'downloading' ? 'Receiving data...' : '')]) {
           const td = document.createElement('td');
-          td.style.cssText = 'padding:2px 6px;border-bottom:1px solid #f2f2f2';
+          td.style.cssText = 'padding:3px 8px;border-bottom:1px solid var(--border)';
           td.textContent = txt;
           tr.appendChild(td);
         }
@@ -142,7 +143,7 @@
       detailsOpen = !detailsOpen;
       $('#detailPane').style.display = detailsOpen ? 'flex' : 'none';
       $('#details').innerHTML = detailsOpen ? 'Hide details &lt;&lt;' : 'Show details &gt;&gt;';
-      idm.winResize(null, detailsOpen ? 454 : 292);
+      idm.winResize(null, detailsOpen ? 480 : 316);
       setTimeout(drawBar, 50);
     };
 

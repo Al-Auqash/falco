@@ -2,60 +2,26 @@
 <html>
 <head><meta charset="utf-8"><title>Scheduler</title><link rel="stylesheet" href="style.css"></head>
 <body>
-  <div class="dlg-body" style="padding:8px 10px 10px">
-    <div style="display:flex;flex:1;min-height:0;gap:10px">
-      <div style="width:200px;flex:none;display:flex;flex-direction:column">
-        <div style="display:flex;align-items:center;gap:6px;margin:2px 0 6px"><span id="schedIcon"></span><b>Queues</b></div>
-        <div style="border:1px solid #d9d9d9;background:#fff;flex:1;padding:4px">
-          <div class="tnode sel"><span class="ticon" id="qi1"></span><span class="tlabel">Main download queue</span></div>
-          <div class="tnode"><span class="ticon" id="qi2"></span><span class="tlabel">Synchronization queue</span></div>
-        </div>
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
-        <div style="text-align:center;margin-bottom:4px">Main download queue</div>
-        <div class="tabs">
-          <span class="tab active" data-p="sched">Schedule</span>
-          <span class="tab" data-p="files">Files in the queue</span>
-        </div>
-        <div class="tabpage" id="page-sched" style="overflow:auto">
-          <div style="display:flex;gap:30px;padding-bottom:6px;border-bottom:1px solid #e5e5e5">
-            <label><input type="radio" name="mode" checked style="vertical-align:-2px"> One-time downloading</label>
-            <label><input type="radio" name="mode" style="vertical-align:-2px"> Periodic synchronization</label>
-          </div>
-          <label style="display:block;margin:10px 0"><input type="checkbox" id="onStartup" style="vertical-align:-2px"> Start download on Falco startup</label>
-          <div style="margin:6px 0">
-            <label><input type="checkbox" id="startAtOn" style="vertical-align:-2px"> Start download at</label>
-            <input type="text" id="startAt" value="23:00:00" style="width:80px;margin-left:8px" disabled>
-          </div>
-          <div style="margin:10px 0">
-            <label><input type="checkbox" disabled style="vertical-align:-2px"> Stop download at</label>
-            <input type="text" value="7:30:00" style="width:80px;margin-left:12px" disabled>
-          </div>
-          <div style="margin:10px 0">
-            <label><input type="checkbox" disabled style="vertical-align:-2px"> Number of retries for each file if downloading failed :</label>
-            <input type="text" value="10" style="width:44px;margin-left:8px" disabled>
-          </div>
-          <div style="margin:12px 0 6px">
-            <label><input type="checkbox" disabled style="vertical-align:-2px"> Open the following file when done:</label>
-          </div>
-          <div style="display:flex;gap:6px">
-            <input type="text" style="flex:1" disabled>
-            <button class="btn" style="min-width:30px;width:30px" disabled>…</button>
-          </div>
-          <label style="display:block;margin:12px 0 4px"><input type="checkbox" disabled style="vertical-align:-2px"> Exit Falco when done</label>
-          <label style="display:block;margin:4px 0"><input type="checkbox" disabled style="vertical-align:-2px"> Turn off computer when done</label>
-        </div>
-        <div class="tabpage" id="page-files" style="display:none;padding:0;overflow:auto">
-          <div id="qfiles"></div>
-        </div>
-      </div>
+  <div class="dlg-body">
+    <div class="tabs">
+      <span class="tab active" data-p="sched">Schedule</span>
+      <span class="tab" data-p="files">Files in the queue</span>
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn" disabled>New queue</button>
-      <button class="btn" disabled>Delete</button>
-      <span style="flex:1"></span>
+    <div class="tabpage" id="page-sched" style="overflow:auto">
+      <label style="display:block;margin:4px 0 12px"><input type="checkbox" id="onStartup" style="vertical-align:-2px"> Start the queue when Falco starts</label>
+      <div>
+        <label><input type="checkbox" id="startAtOn" style="vertical-align:-2px"> Start the queue daily at</label>
+        <input type="text" id="startAt" value="23:00:00" style="width:90px;margin-left:8px" disabled>
+      </div>
+      <div class="hint" style="margin-top:14px">Queued downloads run one after another. Right-click a download in the main window to add it to the queue.</div>
+    </div>
+    <div class="tabpage" id="page-files" style="display:none;padding:6px 0;overflow:auto">
+      <div id="qfiles"></div>
+    </div>
+    <div class="btn-row">
       <button class="btn" id="startNow">Start now</button>
       <button class="btn" id="stopQ">Stop</button>
+      <span style="flex:1"></span>
       <button class="btn" id="apply">Apply</button>
       <button class="btn default" id="close">Close</button>
     </div>
@@ -64,8 +30,6 @@
   <script src="dialog.js"></script>
   <script>
     initTitlebar('Scheduler');
-    $('#schedIcon').innerHTML = TB.scheduler.replace('<svg', '<svg width="24" height="24"');
-    $('#qi1').innerHTML = TREE.queues; $('#qi2').innerHTML = TREE.queues;
     document.querySelectorAll('.tab').forEach((t) => t.onclick = () => {
       document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
       t.classList.add('active');
@@ -77,7 +41,7 @@
       const list = (await idm.list()).filter((d) => d.queue);
       const box = $('#qfiles');
       box.innerHTML = '';
-      if (!list.length) { box.innerHTML = '<div style="padding:10px;color:#777">The queue is empty</div>'; return; }
+      if (!list.length) { box.innerHTML = '<div class="hint" style="padding:10px">The queue is empty.</div>'; return; }
       for (const d of list) {
         const row = document.createElement('div');
         row.className = 'grow';

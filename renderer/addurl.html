@@ -9,15 +9,15 @@
           <label style="width:52px">Address</label>
           <input type="text" id="url" style="flex:1" spellcheck="false">
         </div>
-        <div style="margin:9px 0 0 62px">
+        <div style="margin:10px 0 0 62px">
           <label><input type="checkbox" id="useAuth" style="vertical-align:-2px"> Use authorization</label>
-          <div id="authRow" style="display:none;margin-top:6px">
+          <div id="authRow" style="display:none;margin-top:8px">
             <label>Login</label> <input type="text" id="login" style="width:150px;margin-right:24px">
             <label>Password</label> <input type="password" id="pass" style="width:150px">
           </div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:7px;width:92px">
+      <div style="display:flex;flex-direction:column;gap:8px;width:96px">
         <button class="btn default" id="ok" style="min-width:88px">OK</button>
         <button class="btn" id="cancel">Cancel</button>
       </div>
@@ -30,11 +30,11 @@
     const url = $('#url');
     $('#useAuth').onchange = (e) => {
       $('#authRow').style.display = e.target.checked ? 'block' : 'none';
-      idm.winResize(null, e.target.checked ? 162 : 132);
+      idm.winResize(null, e.target.checked ? 196 : 152);
     };
     $('#ok').onclick = async () => {
       const u = url.value.trim();
-      if (!/^https?:\/\/.+/i.test(u)) { url.focus(); url.style.borderColor = '#e81123'; return; }
+      if (!/^https?:\/\/.+/i.test(u)) { url.focus(); url.style.borderColor = 'var(--danger)'; return; }
       await idm.add(u);
       idm.winClose();
     };
