@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Falco Browser Integration",
+  "version": "1.0.0",
+  "description": "Hands browser downloads to the Falco download manager, like IDM.",
+  "permissions": ["downloads", "storage"],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Falco download catching: ON (click to toggle)",
+    "default_icon": { "128": "icon128.png" }
+  },
+  "icons": { "128": "icon128.png" }
+}

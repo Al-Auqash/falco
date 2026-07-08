@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Browser integration</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <div class="dlg-body" style="padding:12px 16px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Catch downloads from your browser</div>
+    <div style="color:#333;line-height:1.5">
+      Install the Falco extension once and your browser will hand every download to Falco
+      automatically — a Download File Info window pops up, just like IDM.
+    </div>
+    <ol style="margin:10px 0 0 18px;line-height:1.9">
+      <li>Open <b>chrome://extensions</b> (or <b>edge://extensions</b>) in your browser</li>
+      <li>Turn on <b>Developer mode</b> (toggle in the corner)</li>
+      <li>Click <b>Load unpacked</b> and select this folder:</li>
+    </ol>
+    <div style="display:flex;gap:6px;margin:8px 0 0 18px">
+      <input type="text" id="extdir" readonly style="flex:1;user-select:text">
+      <button class="btn" id="copy" style="min-width:60px">Copy</button>
+      <button class="btn" id="open" style="min-width:100px">Open folder</button>
+    </div>
+    <div style="color:#555;margin:12px 0 0">
+      The extension button in the browser toolbar toggles catching on/off.
+      Downloads Falco cannot handle (blob:, data:, non-http) stay in the browser.
+      Falco must be running to catch downloads — it starts with Windows by default
+      (Options → General).
+    </div>
+    <div class="btn-row"><button class="btn default" id="close">Close</button></div>
+  </div>
+  <script src="icons.js"></script>
+  <script src="dialog.js"></script>
+  <script>
+    initTitlebar('Browser integration');
+    (async () => { $('#extdir').value = await idm.extensionDir(); })();
+    $('#copy').onclick = () => navigator.clipboard.writeText($('#extdir').value);
+    $('#open').onclick = () => idm.openExtensionDir();
+    $('#close').onclick = () => idm.winClose();
+  </script>
+</body>
+</html>

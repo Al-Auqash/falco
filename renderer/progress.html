@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Download progress</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <div class="dlg-body" style="padding:8px 10px 10px">
+    <div class="tabs">
+      <span class="tab active" data-p="status">Download status</span>
+      <span class="tab" data-p="limiter">Speed Limiter</span>
+      <span class="tab" data-p="oncomplete">Options on completion</span>
+    </div>
+
+    <div class="tabpage" id="page-status" style="padding:8px 10px;overflow:hidden">
+      <div id="purl" style="color:#0066cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:text;margin-bottom:6px"></div>
+      <table style="border-collapse:collapse;font-size:12px;white-space:nowrap" id="statTable">
+        <tr><td style="width:124px;padding:2px 0">Status</td><td id="pstatus" style="color:#0066cc"></td></tr>
+        <tr><td style="padding:2px 0">File size</td><td id="psize"></td></tr>
+        <tr><td style="padding:2px 0">Downloaded</td><td id="pdown"></td></tr>
+        <tr><td style="padding:2px 0">Transfer rate</td><td id="prate"></td></tr>
+        <tr><td style="padding:2px 0">Time left</td><td id="pleft"></td></tr>
+        <tr><td style="padding:2px 0">Resume capability</td><td id="presume"></td></tr>
+      </table>
+    </div>
+
+    <div class="tabpage" id="page-limiter" style="display:none;padding:14px 12px">
+      <label><input type="checkbox" id="limitOn" style="vertical-align:-2px"> Use speed limit</label>
+      <div style="margin:10px 0 0 22px">
+        <label>Maximum download speed </label>
+        <input type="text" id="limitVal" value="128" style="width:70px" disabled>
+        <label> KB/sec</label>
+      </div>
+    </div>
+
+    <div class="tabpage" id="page-oncomplete" style="display:none;padding:14px 12px">
+      <label style="display:block;margin-bottom:9px"><input type="checkbox" id="openWhenDone" style="vertical-align:-2px"> Open file when download completes</label>
+      <label style="display:block"><input type="checkbox" id="closeWhenDone" checked style="vertical-align:-2px"> Close this dialog when download completes</label>
+    </div>
+
+    <div class="pbar" style="margin-top:8px"><canvas id="segbar"></canvas></div>
+
+    <div style="display:flex;margin-top:10px">
+      <button class="btn" id="details">Show details &gt;&gt;</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="pause" style="margin-right:8px">Pause</button>
+      <button class="btn" id="cancel">Cancel</button>
+    </div>
+
+    <div id="detailPane" style="display:none;margin-top:10px;flex:1;min-height:0;flex-direction:column">
+      <div style="margin-bottom:3px">Connections</div>
+      <div style="border:1px solid #d9d9d9;background:#fff;flex:1;overflow:auto">
+        <table style="border-collapse:collapse;width:100%;font-size:12px" id="segTable">
+          <thead><tr>
+            <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #e5e5e5;font-weight:normal;width:36px">N.</th>
+            <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #e5e5e5;font-weight:normal;width:110px">Downloaded</th>
+            <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #e5e5e5;font-weight:normal">Info</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="icons.js"></script>
+  <script src="dialog.js"></script>
+  <script>
+    initTitlebar('Download progress', { min: true });
+    const id = Number(Q.get('id'));
+    let d = null;
+
+    /* tabs */
+    document.querySelectorAll('.tab').forEach((t) => t.onclick = () => {
+      document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
+      t.classList.add('active');
+      for (const p of ['status', 'limiter', 'oncomplete'])
+        document.getElementById('page-' + p).style.display = p === t.dataset.p ? 'block' : 'none';
+    });
+
+    /* segmented progress bar */
+    const canvas = $('#segbar');
+    function drawBar() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+      if (!d || !d.size) return;
+      const px = (b) => (b / d.size) * w;
+      ctx.fillStyle = '#31b331';
+      if (d.segments && d.segments.length) {
+        for (const s of d.segments) ctx.fillRect(px(s.start), 0, px(Math.min(s.written, s.end - s.start + 1)), h);
+      } else {
+        ctx.fillRect(0, 0, px(d.received), h);
+      }
+      // segment boundary ticks
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      for (const s of d.segments || []) ctx.fillRect(px(s.start), 0, 1, h);
+    }
+
+    function refresh(nd) {
+      d = nd;
+      const pct = d.size ? Math.floor((d.received / d.size) * 100) : 0;
+      setDlgTitle(d.status === 'complete' ? d.filename
+        : d.size ? `${pct}% ${d.filename || ''}` : (d.filename || 'Downloading'));
+      $('#purl').textContent = d.url;
+      $('#pstatus').textContent = { connecting: 'Connecting...', downloading: 'Receiving data...',
+        paused: 'Paused', queued: 'Queued', complete: 'Complete', error: (d.error || 'Error') }[d.status] || d.status;
+      $('#pstatus').style.color = d.status === 'error' ? '#c92a2a' : '#0066cc';
+      $('#psize').textContent = d.size != null ? `${fmtSize(d.size)}` : 'Unknown';
+      $('#pdown').textContent = d.received ? `${fmtSize(d.received)}  ( ${d.size ? ((d.received / d.size) * 100).toFixed(2) + ' %' : ''} )` : '';
+      $('#prate').textContent = d.status === 'downloading' ? fmtSpeed(d.speed) : '';
+      $('#pleft').textContent = d.status === 'downloading' ? fmtTimeLeft(d.timeLeft) : '';
+      $('#presume').textContent = d.resumable == null ? '' : d.resumable ? 'Yes' : 'No';
+      $('#pause').textContent = (d.status === 'downloading' || d.status === 'connecting') ? 'Pause' : 'Resume';
+      drawBar();
+      /* details table */
+      const tb = document.querySelector('#segTable tbody');
+      tb.innerHTML = '';
+      (d.segments || []).forEach((s, i) => {
+        const total = s.end - s.start + 1;
+        const done = Math.min(s.written, total);
+        const tr = document.createElement('tr');
+        for (const txt of [String(i + 1), fmtSize(done), done >= total ? 'Complete' : (d.status === 'downloading' ? 'Receiving data...' : '')]) {
+          const td = document.createElement('td');
+          td.style.cssText = 'padding:2px 6px;border-bottom:1px solid #f2f2f2';
+          td.textContent = txt;
+          tr.appendChild(td);
+        }
+        tb.appendChild(tr);
+      });
+      if (d.status === 'complete' && $('#closeWhenDone').checked) idm.winClose();
+      if (d.status === 'complete' && $('#openWhenDone').checked) idm.openFile(id);
+    }
+
+    idm.onUpdate((nd) => { if (nd.id === id) refresh(nd); });
+    idm.get(id).then((nd) => { if (nd) refresh(nd); });
+
+    $('#pause').onclick = () => {
+      if (!d) return;
+      (d.status === 'downloading' || d.status === 'connecting') ? idm.pause(id) : idm.start(id);
+    };
+    $('#cancel').onclick = () => { idm.pause(id); idm.winClose(); };
+
+    let detailsOpen = false;
+    $('#details').onclick = () => {
+      detailsOpen = !detailsOpen;
+      $('#detailPane').style.display = detailsOpen ? 'flex' : 'none';
+      $('#details').innerHTML = detailsOpen ? 'Hide details &lt;&lt;' : 'Show details &gt;&gt;';
+      idm.winResize(null, detailsOpen ? 454 : 292);
+      setTimeout(drawBar, 50);
+    };
+
+    $('#limitOn').onchange = (e) => {
+      $('#limitVal').disabled = !e.target.checked;
+      applyLimit();
+    };
+    $('#limitVal').oninput = applyLimit;
+    function applyLimit() {
+      const on = $('#limitOn').checked;
+      const kb = Math.max(1, Number($('#limitVal').value) || 128);
+      idm.setLimit(id, on ? kb * 1024 : null);
+    }
+    window.addEventListener('resize', drawBar);
+  </script>
+</body>
+</html>

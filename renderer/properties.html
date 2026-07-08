@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Properties</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <div class="dlg-body" style="padding:12px 14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span id="ficon"></span>
+      <span id="fname" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+    </div>
+    <table style="border-collapse:collapse;font-size:12px;width:100%">
+      <tr><td style="width:80px;padding:3px 0;vertical-align:top">Address</td><td id="purl" style="color:#0066cc;user-select:text;word-break:break-all"></td></tr>
+      <tr><td style="padding:3px 0">Save to</td><td id="ppath" style="user-select:text;word-break:break-all"></td></tr>
+      <tr><td style="padding:3px 0">Size</td><td id="psize"></td></tr>
+      <tr><td style="padding:3px 0">Status</td><td id="pstatus"></td></tr>
+      <tr><td style="padding:3px 0">Added</td><td id="padded"></td></tr>
+    </table>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+      <label style="width:80px">Description</label>
+      <input type="text" id="descr" style="flex:1" spellcheck="false">
+    </div>
+    <div class="btn-row">
+      <button class="btn default" id="ok">OK</button>
+      <button class="btn" id="cancel">Cancel</button>
+    </div>
+  </div>
+  <script src="icons.js"></script>
+  <script src="dialog.js"></script>
+  <script>
+    initTitlebar('Properties');
+    const id = Number(Q.get('id'));
+    idm.get(id).then((d) => {
+      if (!d) return;
+      setDlgTitle((d.filename || 'Download') + ' - Properties');
+      $('#ficon').innerHTML = fileIcon(d.filename);
+      $('#fname').textContent = d.filename || d.url;
+      $('#purl').textContent = d.url;
+      $('#ppath').textContent = d.savePath;
+      $('#psize').textContent = d.size != null ? fmtSize(d.size) : 'Unknown';
+      $('#pstatus').textContent = d.status === 'complete' ? 'Complete'
+        : d.status === 'error' ? 'Error: ' + (d.error || '') : d.status;
+      $('#padded').textContent = new Date(d.addedAt).toLocaleString();
+      $('#descr').value = d.description || '';
+    });
+    $('#ok').onclick = () => { idm.describe(id, $('#descr').value); idm.winClose(); };
+    $('#cancel').onclick = () => idm.winClose();
+  </script>
+</body>
+</html>

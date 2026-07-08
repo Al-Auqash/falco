@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Falco Configuration</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <div class="dlg-body" style="padding:8px 10px 10px">
+    <div class="tabs">
+      <span class="tab active" data-p="general">General</span>
+      <span class="tab" data-p="saveto">Save To</span>
+      <span class="tab" data-p="connection">Connection</span>
+      <span class="tab" data-p="downloads">Downloads</span>
+    </div>
+
+    <div class="tabpage" id="page-general">
+      <div class="groupbox" style="margin-top:4px">
+        <span class="gb-title">General options</span>
+        <label style="display:block;margin:4px 0"><input type="checkbox" id="autoStart" style="vertical-align:-2px"> Launch Falco on system startup</label>
+      </div>
+      <div class="groupbox" style="margin-top:14px">
+        <span class="gb-title">Browser integration</span>
+        <div style="margin:4px 0 8px;color:#555">Install the Falco extension so your browser hands downloads to Falco (Chrome, Edge, and other Chromium browsers).</div>
+        <button class="btn" id="integration" style="min-width:150px">Setup instructions...</button>
+      </div>
+    </div>
+
+    <div class="tabpage" id="page-saveto" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <label>Default download directory</label>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <input type="text" id="dldir" style="flex:1" spellcheck="false">
+        <button class="btn" id="browse" style="min-width:80px">Browse...</button>
+      </div>
+      <div style="color:#555;margin-top:10px">Files are sorted into category subfolders (Music, Video, Programs, ...).</div>
+    </div>
+
+    <div class="tabpage" id="page-connection" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <label>Default max. conn. number</label>
+        <select id="maxconn" style="width:70px">
+          <option>1</option><option>2</option><option>4</option><option selected>8</option><option>16</option><option>32</option>
+        </select>
+      </div>
+      <div style="color:#555;margin-top:10px">Higher connection counts can speed up downloads but increase server load.</div>
+    </div>
+
+    <div class="tabpage" id="page-downloads" style="display:none">
+      <label style="display:block;margin-top:4px"><input type="checkbox" id="showComplete" checked style="vertical-align:-2px"> Show "Download complete" dialog</label>
+      <label style="display:block;margin-top:8px"><input type="checkbox" id="startImm" checked style="vertical-align:-2px"> Start download immediately while showing "Download File Info" dialog</label>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn default" id="ok">OK</button>
+      <button class="btn" id="cancel">Cancel</button>
+      <button class="btn" id="help" disabled>Help</button>
+    </div>
+  </div>
+  <script src="icons.js"></script>
+  <script src="dialog.js"></script>
+  <script>
+    initTitlebar('Falco Configuration');
+    document.querySelectorAll('.tab').forEach((t) => t.onclick = () => {
+      document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
+      t.classList.add('active');
+      for (const p of ['general', 'saveto', 'connection', 'downloads'])
+        document.getElementById('page-' + p).style.display = p === t.dataset.p ? 'block' : 'none';
+    });
+    (async () => {
+      const s = await idm.getSettings();
+      $('#dldir').value = s.downloadDir || '';
+      $('#maxconn').value = String(s.maxConn || 8);
+      $('#showComplete').checked = !!s.showCompleteDialog;
+      $('#startImm').checked = !!s.startImmediately;
+      $('#autoStart').checked = !!s.autoStart;
+    })();
+    $('#integration').onclick = () => idm.openDialog('integration');
+    $('#browse').onclick = async () => {
+      const dir = await idm.chooseDir($('#dldir').value);
+      if (dir) $('#dldir').value = dir;
+    };
+    $('#ok').onclick = async () => {
+      await idm.setSettings({
+        downloadDir: $('#dldir').value,
+        maxConn: Number($('#maxconn').value),
+        showCompleteDialog: $('#showComplete').checked,
+        startImmediately: $('#startImm').checked,
+        autoStart: $('#autoStart').checked,
+      });
+      idm.winClose();
+    };
+    $('#cancel').onclick = () => idm.winClose();
+  </script>
+</body>
+</html>

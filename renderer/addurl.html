@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Enter new address to download</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <div class="dlg-body" style="padding:12px 14px 10px">
+    <div style="display:flex;gap:10px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="width:52px">Address</label>
+          <input type="text" id="url" style="flex:1" spellcheck="false">
+        </div>
+        <div style="margin:9px 0 0 62px">
+          <label><input type="checkbox" id="useAuth" style="vertical-align:-2px"> Use authorization</label>
+          <div id="authRow" style="display:none;margin-top:6px">
+            <label>Login</label> <input type="text" id="login" style="width:150px;margin-right:24px">
+            <label>Password</label> <input type="password" id="pass" style="width:150px">
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;width:92px">
+        <button class="btn default" id="ok" style="min-width:88px">OK</button>
+        <button class="btn" id="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script src="icons.js"></script>
+  <script src="dialog.js"></script>
+  <script>
+    initTitlebar('Enter new address to download');
+    const url = $('#url');
+    $('#useAuth').onchange = (e) => {
+      $('#authRow').style.display = e.target.checked ? 'block' : 'none';
+      idm.winResize(null, e.target.checked ? 162 : 132);
+    };
+    $('#ok').onclick = async () => {
+      const u = url.value.trim();
+      if (!/^https?:\/\/.+/i.test(u)) { url.focus(); url.style.borderColor = '#e81123'; return; }
+      await idm.add(u);
+      idm.winClose();
+    };
+    $('#cancel').onclick = () => idm.winClose();
+    document.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#ok').click(); });
+    // Falco prefills the address from the clipboard when it holds a URL
+    (async () => {
+      try {
+        const t = await navigator.clipboard.readText();
+        if (/^https?:\/\/\S+$/i.test(t.trim())) url.value = t.trim();
+      } catch { /* clipboard unavailable */ }
+      url.focus(); url.select();
+    })();
+  </script>
+</body>
+</html>

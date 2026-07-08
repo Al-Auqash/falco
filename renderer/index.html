@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Falco Download Manager 1.0</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="titlebar">
+    <span class="app-icon" id="appIcon"></span>
+    <span class="title">Falco Download Manager 1.0</span>
+    <span class="spacer"></span>
+    <div class="caption-btns">
+      <button id="btnMin"><svg viewBox="0 0 10 10"><path d="M0 5h10"/></svg></button>
+      <button id="btnMax"><svg viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9"/></svg></button>
+      <button id="btnClose" class="close"><svg viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10"/></svg></button>
+    </div>
+  </div>
+
+  <div class="menubar" id="menubar"></div>
+  <div class="toolbar" id="toolbar"></div>
+
+  <div class="main">
+    <div class="catpanel" id="catpanel">
+      <div class="cat-head"><span>Categories</span><span class="x" id="catClose">✕</span></div>
+      <div class="cattree" id="cattree"></div>
+    </div>
+    <div class="splitter" id="splitter"></div>
+    <div class="grid">
+      <div class="grid-head" id="gridHead"></div>
+      <div class="grid-body" id="gridBody"></div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

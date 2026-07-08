@@ -1,0 +1,60 @@
+{
+  "name": "falco",
+  "version": "1.0.0",
+  "description": "Falco Download Manager",
+  "main": "main.js",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "electron .",
+    "e2e": "electron . --e2e --no-sandbox --userdata=/tmp/falco-e2e-run",
+    "test:real": "node test/real-download.js",
+    "icons": "electron scripts/gen-icon.js --no-sandbox",
+    "dist:win": "electron-builder --win"
+  },
+  "keywords": [],
+  "author": "ilham",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@electron/packager": "^20.0.2",
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "productName": "Falco",
+  "build": {
+    "appId": "com.falco.downloadmanager",
+    "productName": "Falco",
+    "artifactName": "falco.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "engine.js",
+      "renderer/**",
+      "assets/**",
+      "test/server.js"
+    ],
+    "extraResources": [
+      {
+        "from": "extension",
+        "to": "extension"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Falco"
+    }
+  }
+}
